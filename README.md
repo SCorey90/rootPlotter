@@ -1,3 +1,4 @@
+# What is this, and why does it exist?
 This is a tool I made for plotting 1D ROOT objects in a way that I find more convenient by adding all of the objects to a class, chosing colors for them, adding them all automatically to a legend, and plotting it all in one go.
 
 The origin of the idea is that I wanted to set a default color scheme for all of my plots that is friendly to my colorblindness. I hope that people with normal color vision and other colorblind people find the color scheme, which can be sampled by running the ColorPaletteDemo executable, easily discernable as well.
