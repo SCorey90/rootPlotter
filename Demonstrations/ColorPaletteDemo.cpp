@@ -45,7 +45,7 @@ int main() {
     plotter.SetYAxisTitle("y-axis");
     plotter.SetFont(102);
     plotter.ShowStats("off");
-    plotter.SetLegendLowerCenter();
+    // plotter.SetLegendUpperRight();
     plotter.CreatePlot();
 
     std::cout << "Plot created." << std::endl;

@@ -164,6 +164,8 @@ private:
     double legendHeight = 0.2;
 
     // Private methods
+    std::vector<double> getAxisLimits();
+
     bool isPointInLegend(double x, double y);
     bool doesLegendCoverObjects();
 };

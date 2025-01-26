@@ -54,13 +54,13 @@ int main() {
 
     // 6. Create TF1
     TF1* func = new TF1("func", "[0] + [1]*x", 0, 10);
-    func->SetParameters(700, 0.3);  // Set parameters: offset and slope
+    func->SetParameters(0, 100);  // Set parameters: offset and slope
     plotter.AddObject(func, "TF1 Linear");
 
     // Create the plot
     plotter.ShowStats("on", 0.1, 0.3, 0.7, 0.9);
     plotter.SetFont(102);
-    plotter.SetLegendUpperRight();
+    // plotter.SetLegendUpperRight();
     plotter.CreatePlot();
 
     // Save the canvas

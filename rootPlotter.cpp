@@ -3,28 +3,141 @@
 
 // private members
 
+std::vector<double> Plotter::getAxisLimits() {
+    double xmin = std::numeric_limits<double>::max();
+    double xmax = std::numeric_limits<double>::lowest();
+    double ymin = std::numeric_limits<double>::max();
+    double ymax = std::numeric_limits<double>::lowest();
+    bool rangeSet = false;
+
+    // Check TH1F objects
+    for (auto hist : th1fs) {
+        if (!rangeSet) {
+            xmin = hist->GetXaxis()->GetBinLowEdge(hist->GetXaxis()->GetFirst());
+            xmax = hist->GetXaxis()->GetBinUpEdge(hist->GetXaxis()->GetLast());
+            ymin = hist->GetMinimum();
+            ymax = hist->GetMaximum();
+            rangeSet = true;
+        } else {
+            xmin = std::min(xmin, hist->GetXaxis()->GetBinLowEdge(hist->GetXaxis()->GetFirst()));
+            xmax = std::max(xmax, hist->GetXaxis()->GetBinUpEdge(hist->GetXaxis()->GetLast()));
+            ymin = std::min(ymin, hist->GetMinimum());
+            ymax = std::max(ymax, hist->GetMaximum());
+        }
+    }
+
+    // Check TH1D objects
+    for (auto hist : th1ds) {
+        if (!rangeSet) {
+            xmin = hist->GetXaxis()->GetBinLowEdge(hist->GetXaxis()->GetFirst());
+            xmax = hist->GetXaxis()->GetBinUpEdge(hist->GetXaxis()->GetLast());
+            ymin = hist->GetMinimum();
+            ymax = hist->GetMaximum();
+            rangeSet = true;
+        } else {
+            xmin = std::min(xmin, hist->GetXaxis()->GetBinLowEdge(hist->GetXaxis()->GetFirst()));
+            xmax = std::max(xmax, hist->GetXaxis()->GetBinUpEdge(hist->GetXaxis()->GetLast()));
+            ymin = std::min(ymin, hist->GetMinimum());
+            ymax = std::max(ymax, hist->GetMaximum());
+        }
+    }
+
+    // Check TGraph objects
+    for (auto graph : tgraphs) {
+        if (!rangeSet) {
+            xmin = graph->GetXaxis()->GetXmin();
+            xmax = graph->GetXaxis()->GetXmax();
+            ymin = graph->GetYaxis()->GetXmin();
+            ymax = graph->GetYaxis()->GetXmax();
+            rangeSet = true;
+        } else {
+            xmin = std::min(xmin, graph->GetXaxis()->GetXmin());
+            xmax = std::max(xmax, graph->GetXaxis()->GetXmax());
+            ymin = std::min(ymin, graph->GetYaxis()->GetXmin());
+            ymax = std::max(ymax, graph->GetYaxis()->GetXmax());
+        }
+    }
+
+    // Check TGraphErrors objects
+    for (auto graph : tgraphErrors) {
+        if (!rangeSet) {
+            xmin = graph->GetXaxis()->GetXmin();
+            xmax = graph->GetXaxis()->GetXmax();
+            ymin = graph->GetYaxis()->GetXmin();
+            ymax = graph->GetYaxis()->GetXmax();
+            rangeSet = true;
+        } else {
+            xmin = std::min(xmin, graph->GetXaxis()->GetXmin());
+            xmax = std::max(xmax, graph->GetXaxis()->GetXmax());
+            ymin = std::min(ymin, graph->GetYaxis()->GetXmin());
+            ymax = std::max(ymax, graph->GetYaxis()->GetXmax());
+        }
+    }
+
+    // Check TProfile objects
+    for (auto prof : tprofiles) {
+        if (!rangeSet) {
+            xmin = prof->GetXaxis()->GetBinLowEdge(prof->GetXaxis()->GetFirst());
+            xmax = prof->GetXaxis()->GetBinUpEdge(prof->GetXaxis()->GetLast());
+            ymin = prof->GetMinimum();
+            ymax = prof->GetMaximum();
+            rangeSet = true;
+        } else {
+            xmin = std::min(xmin, prof->GetXaxis()->GetBinLowEdge(prof->GetXaxis()->GetFirst()));
+            xmax = std::max(xmax, prof->GetXaxis()->GetBinUpEdge(prof->GetXaxis()->GetLast()));
+            ymin = std::min(ymin, prof->GetMinimum());
+            ymax = std::max(ymax, prof->GetMaximum());
+        }
+    }
+
+    // Check TF1 objects
+    for (auto func : tf1s) {
+        if (!rangeSet) {
+            xmin = func->GetXmin();
+            xmax = func->GetXmax();
+            ymin = func->GetMinimum();
+            ymax = func->GetMaximum();
+            rangeSet = true;
+        } else {
+            xmin = std::min(xmin, func->GetXmin());
+            xmax = std::max(xmax, func->GetXmax());
+            ymin = std::min(ymin, func->GetMinimum());
+            ymax = std::max(ymax, func->GetMaximum());
+        }
+    }
+
+    // If no objects have been added, return default values
+    if (!rangeSet) {
+        return {0.0, 1.0, 0.0, 1.0};
+    }
+
+    return {xmin, xmax, ymin, ymax};
+}
 
 bool Plotter::isPointInLegend(double x, double y) {
     if (!legend) return false;
 
-    // Get legend coordinates in NDC
-    double legendX1 = legend->GetX1NDC();
-    double legendX2 = legend->GetX2NDC();
-    double legendY1 = legend->GetY1NDC();
-    double legendY2 = legend->GetY2NDC();
+    // Get legend coordinates in pad coordinates
+    double x1NDC = legend->GetX1NDC();
+    double x2NDC = legend->GetX2NDC();
+    double y1NDC = legend->GetY1NDC();
+    double y2NDC = legend->GetY2NDC();
 
-    // Get the current pad's ranges
-    double xmin = canvas->GetUxmin();
-    double xmax = canvas->GetUxmax();
-    double ymin = canvas->GetUymin();
-    double ymax = canvas->GetUymax();
+    // Get pad ranges
+    std::vector<double> axisLimits = getAxisLimits();
+    double xmin = axisLimits[0];
+    double xmax = axisLimits[1];
+    double ymin = axisLimits[2];
+    double ymax = axisLimits[3];
 
-    // Convert point from axis coordinates to NDC coordinates
-    double xNDC = marginLeft + (1 - marginLeft - marginRight) * (x - xmin) / (xmax - xmin);
-    double yNDC = marginBottom + (1 - marginBottom - marginTop) * (y - ymin) / (ymax - ymin);
+    // Convert NDC coordinates to user coordinates
+    double x1 = xmin + (xmax - xmin) * x1NDC;
+    double x2 = xmin + (xmax - xmin) * x2NDC;
+    double y1 = ymin + (ymax - ymin) * y1NDC;
+    double y2 = ymin + (ymax - ymin) * y2NDC;
 
     // Check if the point is inside the legend box
-    return (xNDC >= legendX1 && xNDC <= legendX2 && yNDC >= legendY1 && yNDC <= legendY2);
+    return (x >= x1 && x <= x2 && y >= y1 && y <= y2);
 }
 
 bool Plotter::doesLegendCoverObjects() {
@@ -611,91 +724,80 @@ void Plotter::CreatePlot() {
     }
 
     // Automatically place legend if it hasn't been manually positioned
-    // if (!manualLegendPosition) {
-    //     void (Plotter::*legendPositions[])(bool) = {
-    //         &Plotter::SetLegendUpperRight,
-    //         &Plotter::SetLegendUpperLeft,
-    //         &Plotter::SetLegendUpperCenter,
-    //         &Plotter::SetLegendLowerRight,
-    //         &Plotter::SetLegendLowerLeft,
-    //         &Plotter::SetLegendLowerCenter
-    //     };
+    if (!manualLegendPosition) {
+        // Split legend positions into upper and lower
+        std::vector<std::function<void(bool)>> upperLegendPositions = {
+            [this](bool h) { this->SetLegendUpperRight(h); },
+            [this](bool h) { this->SetLegendUpperLeft(h); },
+            [this](bool h) { this->SetLegendUpperCenter(h); }
+        };
+        std::vector<std::function<void(bool)>> lowerLegendPositions = {
+            [this](bool h) { this->SetLegendLowerRight(h); },
+            [this](bool h) { this->SetLegendLowerLeft(h); },
+            [this](bool h) { this->SetLegendLowerCenter(h); }
+        };
 
-    //     bool foundGoodPosition = false;
-    //     double currentYmin, currentYmax;
-    //     double expansionFactor = 0.1; // Start with 10%
-    //     int maxAttempts = 10; // Maximum number of attempts (5 up, 5 down)
-    //     int attempt = 0;
+        // Get the current pad's y range
+        std::vector<double> axisLimits = getAxisLimits();
+        double originalYmin = axisLimits[2];
+        double originalYmax = axisLimits[3];
+        double ymin = originalYmin;
+        double ymax = originalYmax;
 
-    //     // Store original axis ranges
-    //     if (!th1fs.empty()) {
-    //         currentYmin = th1fs[0]->GetYaxis()->GetXmin();
-    //         currentYmax = th1fs[0]->GetYaxis()->GetXmax();
-    //     } else if (!th1ds.empty()) {
-    //         currentYmin = th1ds[0]->GetYaxis()->GetXmin();
-    //         currentYmax = th1ds[0]->GetYaxis()->GetXmax();
-    //     } else if (!tgraphs.empty()) {
-    //         currentYmin = tgraphs[0]->GetYaxis()->GetXmin();
-    //         currentYmax = tgraphs[0]->GetYaxis()->GetXmax();
-    //     } else if (!tgraphErrors.empty()) {
-    //         currentYmin = tgraphErrors[0]->GetYaxis()->GetXmin();
-    //         currentYmax = tgraphErrors[0]->GetYaxis()->GetXmax();
-    //     } else if (!tprofiles.empty()) {
-    //         currentYmin = tprofiles[0]->GetYaxis()->GetXmin();
-    //         currentYmax = tprofiles[0]->GetYaxis()->GetXmax();
-    //     } else if (!tf1s.empty()) {
-    //         currentYmin = tf1s[0]->GetYaxis()->GetXmin();
-    //         currentYmax = tf1s[0]->GetYaxis()->GetXmax();
-    //     }
+        bool legendCoversObjects = true;
+        int positionAttempts = 0;
+        int rangeAttempts = 0;
 
-    //     // Store original ranges
-    //     double originalYmin = currentYmin;
-    //     double originalYmax = currentYmax;
-    //     double delta = (currentYmax - currentYmin) * expansionFactor;
+        // First try different positions at original scale
+        for (auto& setPosition : upperLegendPositions) {
+            setPosition(false);
+            legendCoversObjects = doesLegendCoverObjects();
+            if (!legendCoversObjects) break;
+        }
+        if (legendCoversObjects) {
+            for (auto& setPosition : lowerLegendPositions) {
+                setPosition(false);
+                legendCoversObjects = doesLegendCoverObjects();
+                if (!legendCoversObjects) break;
+            }
+        }
 
-    //     while (!foundGoodPosition && attempt < maxAttempts) {
-    //         // Try all positions with current axis range
-    //         for (auto position : legendPositions) {
-    //             (this->*position)(false);
-    //             canvas->Update();
-    //             if (!doesLegendCoverObjects()) {
-    //                 foundGoodPosition = true;
-    //                 break;
-    //             }
-    //         }
+        // If no suitable position found, start alternating between increasing ymax and ymin
+        while (legendCoversObjects && rangeAttempts < 10) {
+            if (rangeAttempts % 2 == 0) {
+                // Try increasing ymax
+                ymax = originalYmax * (1.0 + (0.1 * ((rangeAttempts/2) + 1)));
+                ymin = originalYmin;
+                SetYAxisRange(ymin, ymax);
 
-    //         if (!foundGoodPosition) {
-    //             // Reset to original range first
-    //             currentYmin = originalYmin;
-    //             currentYmax = originalYmax;
+                // Check upper positions
+                for (auto& setPosition : upperLegendPositions) {
+                    setPosition(false);
+                    legendCoversObjects = doesLegendCoverObjects();
+                    if (!legendCoversObjects) {
+                        break;
+                    }
+                }
+            } else {
+                // Try increasing ymin
+                ymin = originalYmin * (1.0 + (0.1 * ((rangeAttempts/2) + 1)));
+                ymax = originalYmax;
+                SetYAxisRange(ymin, ymax);
 
-    //             if (attempt % 2 == 0) {
-    //                 // Even attempts: expand upper limit
-    //                 currentYmax = originalYmax + delta * (1 + attempt/2);
-    //                 std::cout << "Trying with upper limit expanded by "
-    //                          << (expansionFactor * (1 + attempt/2) * 100)
-    //                          << "%" << std::endl;
-    //             } else {
-    //                 // Odd attempts: expand lower limit
-    //                 currentYmin = originalYmin - delta * (1 + attempt/2);
-    //                 std::cout << "Trying with lower limit expanded by "
-    //                          << (expansionFactor * (1 + attempt/2) * 100)
-    //                          << "%" << std::endl;
-    //             }
+                // Check lower positions
+                for (auto& setPosition : lowerLegendPositions) {
+                    setPosition(false);
+                    legendCoversObjects = doesLegendCoverObjects();
+                    if (!legendCoversObjects) {
+                        break;
+                    }
+                }
+            }
 
-    //             // Set new ranges for all objects
-    //             SetYAxisRange(currentYmin, currentYmax);
-    //             attempt++;
-    //         }
-    //     }
-
-    //     if (!foundGoodPosition) {
-    //         SetLegendUpperRight(false);
-    //         // Reset to original range
-    //         SetYAxisRange(originalYmin, originalYmax);
-    //         std::cout << "Warning: Could not find legend position even after expanding axis range" << std::endl;
-    //     }
-    // }
+            if (!legendCoversObjects) break;
+            rangeAttempts++;
+        }
+    }
 
     if (showLegend) {
         auto * legendtodraw = new TLegend(legend->GetX1NDC(), legend->GetY1NDC(), legend->GetX2NDC(), legend->GetY2NDC());
